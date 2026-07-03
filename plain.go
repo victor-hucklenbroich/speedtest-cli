@@ -8,10 +8,6 @@ import (
 )
 
 func runPlain(events <-chan measure.Event, server string) {
-	fmt.Println("Speed test")
-	fmt.Println("==========")
-	fmt.Printf("Server: %s\n\n", server)
-
 	printed := map[measure.Phase]bool{}
 	sep := ""
 	for ev := range events {

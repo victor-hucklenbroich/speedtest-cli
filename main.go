@@ -13,6 +13,7 @@ import (
 	"speedtest/internal/tui"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-isatty"
 )
 
 //go:generate go run ./internal/gendocs
