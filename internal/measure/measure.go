@@ -1,7 +1,6 @@
 package measure
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -66,9 +65,15 @@ type (
 
 func Run(ctx context.Context, cfg Config, events chan<- Event) {
 	r := &runner{cfg: cfg, events: events, ctx: ctx}
-	r.latency()
-	r.phase(Download, cfg.DownloadSizes, r.download)
-	r.phase(Upload, cfg.UploadSizes, r.upload)
+	if cfg.LatencySamples > 0 {
+		r.latency()
+	}
+	if len(cfg.DownloadSizes) > 0 {
+		r.phase(Download, cfg.DownloadSizes, r.download)
+	}
+	if len(cfg.UploadSizes) > 0 {
+		r.phase(Upload, cfg.UploadSizes, r.upload)
+	}
 	r.emit(Done{})
 }
 
@@ -230,8 +235,7 @@ func (r *runner) download(size int, count *atomic.Int64) (int64, error) {
 }
 
 func (r *runner) upload(size int, count *atomic.Int64) (int64, error) {
-	payload := make([]byte, size)
-	req, err := http.NewRequestWithContext(r.ctx, http.MethodPost, r.upURL(), &countReader{r: bytes.NewReader(payload), n: count})
+	req, err := http.NewRequestWithContext(r.ctx, http.MethodPost, r.upURL(), &countReader{r: &zeroReader{n: int64(size)}, n: count})
 	if err != nil {
 		return 0, err
 	}
@@ -265,6 +269,22 @@ func (c *countReader) Read(p []byte) (int, error) {
 	n, err := c.r.Read(p)
 	c.n.Add(int64(n))
 	return n, err
+}
+
+type zeroReader struct{ n int64 }
+
+func (z *zeroReader) Read(p []byte) (int, error) {
+	if z.n <= 0 {
+		return 0, io.EOF
+	}
+	if int64(len(p)) > z.n {
+		p = p[:z.n]
+	}
+	for i := range p {
+		p[i] = 0
+	}
+	z.n -= int64(len(p))
+	return len(p), nil
 }
 
 func parseServerTiming(h string) time.Duration {

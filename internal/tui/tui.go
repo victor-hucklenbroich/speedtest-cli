@@ -62,6 +62,7 @@ type Model struct {
 
 	width int
 
+	ping       bool
 	latDone    bool
 	latSamples int
 	latTotal   int
@@ -76,12 +77,13 @@ type Model struct {
 	aborted   bool
 }
 
-func New(events <-chan measure.Event, cancel context.CancelFunc, server, version string) Model {
+func New(events <-chan measure.Event, cancel context.CancelFunc, server, version string, ping bool) Model {
 	return Model{
 		events:    events,
 		cancel:    cancel,
 		server:    server,
 		version:   version,
+		ping:      ping,
 		width:     80,
 		startedAt: time.Now(),
 	}
@@ -186,9 +188,12 @@ func (m Model) View() string {
 	var b strings.Builder
 
 	b.WriteString(titleStyle.Render("speedtest") + dimStyle.Render(" "+m.version) + "\n")
-	b.WriteString(dimStyle.Render("server  ") + m.server + "\n\n")
+	b.WriteString(dimStyle.Render("server  ") + m.server + "\n")
 
-	m.renderLatency(&b)
+	if m.ping {
+		b.WriteString("\n")
+		m.renderLatency(&b)
+	}
 	m.renderPhase(&b, "Download", "↓", &m.down, downStyle)
 	m.renderPhase(&b, "Upload", "↑", &m.up, upStyle)
 

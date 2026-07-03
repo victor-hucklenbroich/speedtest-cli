@@ -5,7 +5,7 @@ export default {
 
         // GET
         if (url.pathname === "/down") {
-            const bytes = Math.min(parseInt(url.searchParams.get("bytes") || "0", 10) || 0, 1_000_000_000);
+            const bytes = Math.min(parseInt(url.searchParams.get("bytes") || "0", 10) || 0, 1 << 30);
             const chunk = new Uint8Array(65536);
             let sent = 0;
             const stream = new ReadableStream({

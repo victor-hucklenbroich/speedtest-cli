@@ -13,7 +13,43 @@ import (
 	"speedtest/internal/tui"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-isatty"
 )
+
+//go:generate go run ./internal/gendocs
+
+var (
+	downloadLadder = []int{
+		1 << 20,
+		10 << 20,
+		25 << 20,
+		50 << 20,
+		90 << 20,
+	}
+	uploadLadder = []int{
+		1 << 20,
+		5 << 20,
+		10 << 20,
+		25 << 20,
+		50 << 20,
+	}
+)
+
+func ladder(defaults []int, size int, andUp bool) []int {
+	if size == 0 {
+		return defaults
+	}
+	if !andUp {
+		return []int{size}
+	}
+	out := []int{size}
+	for _, s := range defaults {
+		if s > size {
+			out = append(out, s)
+		}
+	}
+	return out
+}
 
 func main() {
 	cfg, err := cli.ParseConfig(os.Args[1:])
@@ -30,24 +66,19 @@ func main() {
 	defer cancel()
 
 	mcfg := measure.Config{
-		BaseURL:        cfg.ServerURL,
-		Client:         &http.Client{Timeout: 60 * time.Second},
-		LatencySamples: 20,
-		DownloadSizes: []int{
-			1 << 20,
-			10 << 20,
-			25 << 20,
-			50 << 20,
-			90 << 20,
-		},
-		UploadSizes: []int{
-			1 << 20,
-			5 << 20,
-			10 << 20,
-			25 << 20,
-			50 << 20,
-		},
+		BaseURL: cfg.ServerURL,
+		Client:  &http.Client{Timeout: 60 * time.Second},
 	}
+	if cfg.Ping {
+		mcfg.LatencySamples = 20
+	}
+	if cfg.Down {
+		mcfg.DownloadSizes = ladder(downloadLadder, cfg.SizeBytes, cfg.SizeAndUp)
+	}
+	if cfg.Up {
+		mcfg.UploadSizes = ladder(uploadLadder, cfg.SizeBytes, cfg.SizeAndUp)
+	}
+
 	events := make(chan measure.Event, 64)
 	go func() {
 		measure.Run(ctx, mcfg, events)
@@ -59,7 +90,7 @@ func main() {
 		return
 	}
 
-	if _, err := tea.NewProgram(tui.New(events, cancel, cfg.ServerURL, cli.Version)).Run(); err != nil {
+	if _, err := tea.NewProgram(tui.New(events, cancel, cfg.ServerURL, cli.Version, cfg.Ping)).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "speedtest: %v\n", err)
 		os.Exit(1)
 	}

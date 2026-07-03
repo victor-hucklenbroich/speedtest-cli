@@ -13,9 +13,11 @@ func runPlain(events <-chan measure.Event, server string) {
 	fmt.Printf("Server: %s\n\n", server)
 
 	printed := map[measure.Phase]bool{}
+	sep := ""
 	for ev := range events {
 		switch e := ev.(type) {
 		case measure.LatencyResult:
+			sep = "\n"
 			if e.Samples == 0 {
 				fmt.Println("Latency: failed (no samples)")
 			} else {
@@ -29,7 +31,8 @@ func runPlain(events <-chan measure.Event, server string) {
 				if e.Phase == measure.Upload {
 					name = "Upload"
 				}
-				fmt.Printf("\n%s:\n", name)
+				fmt.Printf("%s%s:\n", sep, name)
+				sep = "\n"
 			}
 		case measure.TierResult:
 			if e.Err != nil {
