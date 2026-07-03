@@ -1,5 +1,7 @@
 # speedtest-cli
 
+<img src="./demo/demo.gif" alt="drawing" width="650"/>
+
 A small, zero-dependency Go CLI that measures latency, download and upload bandwidth. 
 Uses personal [Cloudflare Worker](worker/) as a bulk download / upload server. A different endpoint can be configured using a the `--url` flag or setting the `SPEEDTEST_URL` env variable.
 
