@@ -1,0 +1,11 @@
+# Go / GoReleaser
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+
+# OS / IDE
+.DS_Store
+.idea/
+*.swp
