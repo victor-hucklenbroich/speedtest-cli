@@ -10,7 +10,7 @@ Uses personal [Cloudflare Worker](worker/) as a bulk download / upload server. A
 **Homebrew (macOS)**
 
 ```
-brew install --cask victor-hucklenbroich/tap/speedtest-cli
+brew install --cask victor-hucklenbroich/tap/speedtest
 ```
 
 **Shell installer (macOS, Linux)**

@@ -35,7 +35,10 @@ release:
   prerelease: auto
 
 homebrew_casks:
-  - name: speedtest-cli
+  # Token "speedtest" (not the project name): homebrew/core's deprecated
+  # speedtest-cli formula owns that name, and brew audit rejects colliding
+  # tokens. Matches the binary name instead.
+  - name: speedtest
     repository:
       owner: victor-hucklenbroich
       name: homebrew-tap
@@ -54,4 +57,4 @@ homebrew_casks:
         install: >-
           system_command "/usr/bin/xattr",
           args: ["-dr", "com.apple.quarantine", "#{staged_path}/speedtest"]
-    caveats: The command is installed as `speedtest`, not `speedtest-cli`.
+    caveats: Run `speedtest` for a full test, `speedtest --help` for options.
