@@ -19,11 +19,13 @@ var Version = "0.1.0-indev"
 type Config struct {
 	ServerURL   string
 	ShowVersion bool
+	Plain       bool
 }
 
 func flagSet(cfg *Config) *flag.FlagSet {
 	fs := flag.NewFlagSet("speedtest", flag.ExitOnError)
 	fs.StringVar(&cfg.ServerURL, "url", "", "speedtest server base URL")
+	fs.BoolVar(&cfg.Plain, "plain", false, "plain line output instead of the animated TUI (automatic when stdout is not a terminal)")
 	fs.BoolVar(&cfg.ShowVersion, "version", false, "print version and exit")
 	fs.Usage = func() { fmt.Fprint(fs.Output(), Usage()) }
 	return fs
