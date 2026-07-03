@@ -55,10 +55,9 @@ func (st *phaseState) animate() {
 }
 
 type Model struct {
-	events  <-chan measure.Event
-	cancel  context.CancelFunc
-	server  string
-	version string
+	events <-chan measure.Event
+	cancel context.CancelFunc
+	server string
 
 	width int
 
@@ -77,12 +76,11 @@ type Model struct {
 	aborted   bool
 }
 
-func New(events <-chan measure.Event, cancel context.CancelFunc, server, version string, ping bool) Model {
+func New(events <-chan measure.Event, cancel context.CancelFunc, server string, ping bool) Model {
 	return Model{
 		events:    events,
 		cancel:    cancel,
 		server:    server,
-		version:   version,
 		ping:      ping,
 		width:     80,
 		startedAt: time.Now(),
@@ -185,74 +183,77 @@ func (m *Model) phase(p measure.Phase) *phaseState {
 }
 
 func (m Model) View() string {
-	var b strings.Builder
-
-	b.WriteString(titleStyle.Render("speedtest") + dimStyle.Render(" "+m.version) + "\n")
-	b.WriteString(dimStyle.Render("server  ") + m.server + "\n")
-
-	if m.ping {
-		b.WriteString("\n")
-		m.renderLatency(&b)
+	var blocks []string
+	if m.server != "" {
+		blocks = append(blocks, dimStyle.Render("server  ")+m.server)
 	}
-	m.renderPhase(&b, "Download", "↓", &m.down, downStyle)
-	m.renderPhase(&b, "Upload", "↑", &m.up, upStyle)
+	if m.ping {
+		blocks = append(blocks, m.latencyBlock())
+	}
+	if blk := m.phaseBlock("Download", "↓", &m.down, downStyle); blk != "" {
+		blocks = append(blocks, blk)
+	}
+	if blk := m.phaseBlock("Upload", "↑", &m.up, upStyle); blk != "" {
+		blocks = append(blocks, blk)
+	}
 
-	b.WriteString("\n")
 	switch {
 	case m.aborted:
-		b.WriteString(errStyle.Render("✗ aborted") + "\n")
+		blocks = append(blocks, errStyle.Render("✗ aborted"))
 	case m.done:
-		b.WriteString(okStyle.Render("✓ complete") + dimStyle.Render(fmt.Sprintf(" in %.0fs", m.total.Seconds())) + "\n")
+		blocks = append(blocks, okStyle.Render("✓ complete")+dimStyle.Render(fmt.Sprintf(" in %.0fs", m.total.Seconds())))
 	default:
-		b.WriteString(dimStyle.Render("q to abort") + "\n")
+		blocks = append(blocks, dimStyle.Render("q to abort"))
 	}
-	return b.String()
+	return strings.Join(blocks, "\n\n") + "\n"
 }
 
-func (m Model) renderLatency(b *strings.Builder) {
+func (m Model) latencyBlock() string {
 	label := titleStyle.Render("Ping    ")
 	switch {
 	case m.latDone && m.lat.Samples == 0:
-		b.WriteString(label + errStyle.Render("failed (no samples)") + "\n")
+		return label + errStyle.Render("failed (no samples)")
 	case m.latDone:
-		b.WriteString(label + fmt.Sprintf("%.2f ms", ms(m.lat.Avg)) +
-			dimStyle.Render(fmt.Sprintf("   min %.2f ms   jitter %.2f ms   [%d samples]",
-				ms(m.lat.Min), ms(m.lat.Jitter), m.lat.Samples)) + "\n")
+		return label + fmt.Sprintf("%.2f ms", ms(m.lat.Avg)) +
+			dimStyle.Render(fmt.Sprintf("   min %.2f ms   [%d samples]", ms(m.lat.Min), m.lat.Samples)) +
+			"\n" + titleStyle.Render("Jitter  ") + fmt.Sprintf("%.2f ms", ms(m.lat.Jitter))
 	case m.latTotal > 0:
-		b.WriteString(label + fmt.Sprintf("%.2f ms", ms(m.lat.Avg)) +
-			dimStyle.Render(fmt.Sprintf("   min %.2f ms   %d/%d", ms(m.lat.Min), m.latSamples, m.latTotal)) + "\n")
+		return label + fmt.Sprintf("%.2f ms", ms(m.lat.Avg)) +
+			dimStyle.Render(fmt.Sprintf("   min %.2f ms   %d/%d", ms(m.lat.Min), m.latSamples, m.latTotal))
 	default:
-		b.WriteString(label + dimStyle.Render("measuring…") + "\n")
+		return label + dimStyle.Render("measuring…")
 	}
 }
 
-func (m Model) renderPhase(b *strings.Builder, name, arrow string, st *phaseState, style lipgloss.Style) {
+func (m Model) phaseBlock(name, arrow string, st *phaseState, style lipgloss.Style) string {
 	if !st.started {
-		return
+		return ""
 	}
-	b.WriteString("\n" + style.Render(arrow+" "+name) + "\n")
+	title := style.Render(fmt.Sprintf("%-10s", arrow+" "+name))
+	if st.done && st.max > 0 {
+		title += "  " + titleStyle.Render(fmt.Sprintf("%.2f Mbps", st.max))
+	}
+	lines := []string{title}
 	if !st.done {
 		for i, row := range bigNumber(st.display) {
 			line := "  " + style.Render(row)
 			if i == 2 {
 				line += dimStyle.Render("  Mbps")
 			}
-			b.WriteString(line + "\n")
+			lines = append(lines, line)
 		}
 		w := m.width - 4
 		if w > 48 {
 			w = 48
 		}
 		if len(st.spark) > 0 && w > 0 {
-			b.WriteString("  " + style.Render(sparkline(st.spark, w)) + "\n")
+			lines = append(lines, "  "+style.Render(sparkline(st.spark, w)))
 		}
 	}
 	for _, row := range st.tiers {
-		b.WriteString(m.renderTier(row, style) + "\n")
+		lines = append(lines, m.renderTier(row, style))
 	}
-	if st.done {
-		b.WriteString(dimStyle.Render("  -> max ") + titleStyle.Render(fmt.Sprintf("%.2f Mbps", st.max)) + "\n")
-	}
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) renderTier(row tierRow, style lipgloss.Style) string {

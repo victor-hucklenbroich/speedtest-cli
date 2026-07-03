@@ -13,21 +13,18 @@ import (
 	"speedtest/internal/tui"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mattn/go-isatty"
 )
 
 //go:generate go run ./internal/gendocs
 
 var (
 	downloadLadder = []int{
-		1 << 20,
 		10 << 20,
 		25 << 20,
 		50 << 20,
 		90 << 20,
 	}
 	uploadLadder = []int{
-		1 << 20,
 		5 << 20,
 		10 << 20,
 		25 << 20,
@@ -90,7 +87,11 @@ func main() {
 		return
 	}
 
-	if _, err := tea.NewProgram(tui.New(events, cancel, cfg.ServerURL, cli.Version, cfg.Ping)).Run(); err != nil {
+	server := ""
+	if cfg.ServerURL != cli.DefaultServerURL {
+		server = cfg.ServerURL
+	}
+	if _, err := tea.NewProgram(tui.New(events, cancel, server, cfg.Ping)).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "speedtest: %v\n", err)
 		os.Exit(1)
 	}
