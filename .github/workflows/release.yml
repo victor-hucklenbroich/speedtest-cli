@@ -1,0 +1,34 @@
+# Pushing a tag like v1.2.3 cross-compiles speedtest for macOS, Linux and
+# Windows, publishes the archives as a GitHub Release (which install.sh
+# downloads), and bumps the cask in the victor-hucklenbroich/homebrew-tap
+# repo. All of that is driven by GoReleaser — see .goreleaser.yaml.
+#
+# Required repository secrets:
+#   TAP_GITHUB_TOKEN - push access to victor-hucklenbroich/homebrew-tap
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # GoReleaser needs the tag history
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}

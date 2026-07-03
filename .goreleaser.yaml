@@ -1,0 +1,57 @@
+# GoReleaser config (https://goreleaser.com), driven by the Release workflow:
+# cross-compiles the speedtest binary, publishes the archives as a GitHub
+# Release, and bumps the cask in victor-hucklenbroich/homebrew-tap.
+version: 2
+
+project_name: speedtest-cli
+
+builds:
+  - main: .
+    binary: speedtest
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X speedtest/internal/cli.Version={{ .Version }}
+
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github-native
+
+release:
+  prerelease: auto
+
+homebrew_casks:
+  - name: speedtest-cli
+    repository:
+      owner: victor-hucklenbroich
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: Casks
+    binaries: [speedtest]
+    homepage: https://github.com/victor-hucklenbroich/speedtest-cli
+    description: Terminal internet speed test with an animated TUI
+    commit_author:
+      name: github-actions[bot]
+      email: 41898282+github-actions[bot]@users.noreply.github.com
+    commit_msg_template: "speedtest-cli {{ .Version }}"
+    skip_upload: auto
+    hooks:
+      post:
+        install: >-
+          system_command "/usr/bin/xattr",
+          args: ["-dr", "com.apple.quarantine", "#{staged_path}/speedtest"]
+    caveats: The command is installed as `speedtest`, not `speedtest-cli`.
