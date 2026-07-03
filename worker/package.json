@@ -1,0 +1,11 @@
+{
+  "name": "speedtest-worker",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "^4"
+  },
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  }
+}
