@@ -17,7 +17,7 @@ const (
 	MaxSize = 1 << 30
 )
 
-var Version = "0.1.1-SNAPSHOT"
+var Version = "0.1.1"
 
 type Config struct {
 	ServerURL   string
