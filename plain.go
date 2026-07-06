@@ -32,7 +32,7 @@ func runPlain(events <-chan measure.Event, server string) {
 			}
 		case measure.TierResult:
 			if e.Err != nil {
-				fmt.Printf("  %8s  error: %v\n", measure.FormatBytes(e.Size), e.Err)
+				fmt.Printf("  %8s  %s\n", measure.FormatBytes(e.Size), measure.Reason(e.Err))
 			} else {
 				fmt.Printf("  %8s  %8.2f Mbps  (%.1fs)\n", measure.FormatBytes(e.Size), e.Mbps, e.Elapsed.Seconds())
 			}

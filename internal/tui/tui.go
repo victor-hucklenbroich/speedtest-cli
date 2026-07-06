@@ -74,6 +74,7 @@ type Model struct {
 	total     time.Duration
 	done      bool
 	aborted   bool
+	failed    bool
 }
 
 func New(events <-chan measure.Event, cancel context.CancelFunc, server string, ping bool) Model {
@@ -160,7 +161,9 @@ func (m Model) handleEvent(ev measure.Event) (tea.Model, tea.Cmd) {
 		if n := len(st.tiers); n > 0 && st.tiers[n-1].running {
 			st.tiers[n-1] = tierRow{size: e.Size, mbps: e.Mbps, elapsed: e.Elapsed, err: e.Err}
 		}
-		if e.Err == nil {
+		if e.Err != nil {
+			m.failed = true
+		} else {
 			st.target = e.Mbps
 		}
 	case measure.PhaseResult:
@@ -200,6 +203,8 @@ func (m Model) View() string {
 	switch {
 	case m.aborted:
 		blocks = append(blocks, errStyle.Render("✗ aborted"))
+	case m.done && m.failed:
+		blocks = append(blocks, errStyle.Render("✗ incomplete")+dimStyle.Render(fmt.Sprintf(" in %.0fs", m.total.Seconds())))
 	case m.done:
 		blocks = append(blocks, okStyle.Render("✓ complete")+dimStyle.Render(fmt.Sprintf(" in %.0fs", m.total.Seconds())))
 	default:
@@ -263,7 +268,7 @@ func (m Model) renderTier(row tierRow, style lipgloss.Style) string {
 		frac := float64(row.bytes) / float64(row.size)
 		return fmt.Sprintf("  %s  %s %3.0f%%", label, style.Render(bar(frac, 24)), frac*100)
 	case row.err != nil:
-		return errStyle.Render(fmt.Sprintf("  %s  error: %v", label, row.err))
+		return errStyle.Render(fmt.Sprintf("  %s  %s", label, measure.Reason(row.err)))
 	default:
 		return dimStyle.Render(fmt.Sprintf("  %s  %8.2f Mbps  (%.1fs)", label, row.mbps, row.elapsed.Seconds()))
 	}

@@ -2,8 +2,10 @@ package measure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -301,6 +303,20 @@ func parseServerTiming(h string) time.Duration {
 		return 0
 	}
 	return time.Duration(val * float64(time.Millisecond))
+}
+
+func Reason(err error) string {
+	if err == nil {
+		return ""
+	}
+	if errors.Is(err, context.Canceled) {
+		return "canceled"
+	}
+	var ne net.Error
+	if errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &ne) && ne.Timeout()) {
+		return "timed out (transfer too large for this connection)"
+	}
+	return err.Error()
 }
 
 func FormatBytes(b int) string {
