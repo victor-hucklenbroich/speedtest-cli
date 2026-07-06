@@ -62,7 +62,12 @@ func Usage() string {
 
 func ParseConfig(args []string) (Config, error) {
 	var cfg Config
-	flagSet(&cfg).Parse(args)
+	fs := flagSet(&cfg)
+	fs.Parse(args)
+
+	if fs.NArg() > 0 {
+		return Config{}, fmt.Errorf("unexpected argument %q (for supported flags see 'speedtest --help')", fs.Arg(0))
+	}
 
 	if cfg.ShowVersion {
 		return cfg, nil
