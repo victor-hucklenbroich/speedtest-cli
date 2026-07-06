@@ -1,5 +1,9 @@
 # speedtest-cli
 
+![GitHub release(latest by date)](https://img.shields.io/github/v/release/victor-hucklenbroich/speedtest-cli)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)
+[![Go](https://img.shields.io/badge/Go-%2300ADD8.svg?&logo=go&logoColor=white)](#)
+
 <img src="./demo/demo.gif" alt="drawing" width="650"/>
 
 A small, zero-dependency Go CLI that measures latency, download and upload bandwidth. 
