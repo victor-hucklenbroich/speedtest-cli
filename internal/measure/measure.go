@@ -321,6 +321,10 @@ func Reason(err error) string {
 
 func FormatBytes(b int) string {
 	switch {
+	case b >= 1<<40:
+		return fmt.Sprintf("%d TB", b>>40)
+	case b >= 1<<30:
+		return fmt.Sprintf("%d GB", b>>30)
 	case b >= 1<<20:
 		return fmt.Sprintf("%d MB", b>>20)
 	case b >= 1<<10:

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"time"
 
 	"speedtest/internal/cli"
 	"speedtest/internal/measure"
@@ -65,7 +64,7 @@ func main() {
 
 	mcfg := measure.Config{
 		BaseURL: cfg.ServerURL,
-		Client:  &http.Client{Timeout: 60 * time.Second},
+		Client:  &http.Client{Timeout: cfg.Timeout},
 	}
 	if cfg.Ping {
 		mcfg.LatencySamples = 20

@@ -6,8 +6,8 @@
 
 <img src="./demo/demo.gif" alt="drawing" width="650"/>
 
-A small, zero-dependency Go CLI that measures latency, download and upload bandwidth. 
-Uses personal [Cloudflare Worker](worker/) as a bulk download / upload server. A different endpoint can be configured using a the `--url` flag or setting the `SPEEDTEST_URL` env variable.
+A small, zero-dependency CLI that measures latency, download and upload bandwidth. 
+Uses personal [Cloudflare Worker](worker/) as a bulk download / upload server. A different endpoint can be configured with the `--url` flag or the `url` entry in the config file (see Usage).
 
 ## Install
 
@@ -62,11 +62,13 @@ Flags:
   -plain
     	plain line output instead of the animated TUI (automatic when stdout is not a terminal)
   -size string
-    	transfer size, e.g. 25MB or 500KB (bare number = MB, max 1GB); append + to escalate from there
+    	transfer size, e.g. 25MB or 500KB (bare number = MB, max 1TB); append + to escalate from there
+  -timeout float
+    	per-transfer timeout in minutes, default 1 (saved to the config file)
   -up
     	measure upload
   -url string
-    	speedtest server base URL
+    	speedtest server base URL (saved to the config file)
   -version
     	print version and exit
 
@@ -75,10 +77,15 @@ Phase flags combine: --ping --down runs ping and download
 --size 25MB runs a single 25 MB transfer
 --size 25MB+ walks the normal escalation ladder but starts it at 25 MB.
 
-The server URL is resolved in this order:
-  1. --url flag
-  2. SPEEDTEST_URL environment variable
-  3. built-in default: https://speedtest-worker.speedtest-cli.workers.dev
+--timeout 5 caps each transfer at 5 minutes; raise it for very large --size values.
+
+--url and --timeout are written to the config file, so they apply now and persist for
+later runs. Without a flag the saved value is used (built-in defaults on first run).
+
+Config file:
+  macOS    ~/Library/Application Support/speedtest/config.yml
+  Linux    ~/.config/speedtest/config.yml
+  Windows  %AppData%\speedtest\config.yml
 ```
 
 <!-- END USAGE -->

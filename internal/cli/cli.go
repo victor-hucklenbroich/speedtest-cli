@@ -3,18 +3,17 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"net/url"
-	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
 	DefaultServerURL = "https://speedtest-worker.speedtest-cli.workers.dev"
 
-	ServerURLEnv = "SPEEDTEST_URL"
+	DefaultTimeoutMinutes = 1
 
-	MaxSize = 1 << 30
+	MaxSize = 1 << 40
 )
 
 var Version = "0.1.1"
@@ -28,16 +27,19 @@ type Config struct {
 	Up          bool
 	SizeBytes   int
 	SizeAndUp   bool
+	Timeout     time.Duration
 	sizeRaw     string
+	timeoutMins float64
 }
 
 func flagSet(cfg *Config) *flag.FlagSet {
 	fs := flag.NewFlagSet("speedtest", flag.ExitOnError)
-	fs.StringVar(&cfg.ServerURL, "url", "", "speedtest server base URL")
+	fs.StringVar(&cfg.ServerURL, "url", "", "speedtest server base URL (saved to the config file)")
 	fs.BoolVar(&cfg.Ping, "ping", false, "measure ping")
 	fs.BoolVar(&cfg.Down, "down", false, "measure download")
 	fs.BoolVar(&cfg.Up, "up", false, "measure upload")
-	fs.StringVar(&cfg.sizeRaw, "size", "", "transfer size, e.g. 25MB or 500KB (bare number = MB, max 1GB); append + to escalate from there")
+	fs.StringVar(&cfg.sizeRaw, "size", "", "transfer size, e.g. 25MB or 500KB (bare number = MB, max 1TB); append + to escalate from there")
+	fs.Float64Var(&cfg.timeoutMins, "timeout", 0, "per-transfer timeout in minutes, default 1 (saved to the config file)")
 	fs.BoolVar(&cfg.Plain, "plain", false, "plain line output instead of the animated TUI (automatic when stdout is not a terminal)")
 	fs.BoolVar(&cfg.ShowVersion, "version", false, "print version and exit")
 	fs.Usage = func() { fmt.Fprint(fs.Output(), Usage()) }
@@ -53,10 +55,13 @@ func Usage() string {
 	fmt.Fprintf(&b, "\nPhase flags combine: --ping --down runs ping and download\n")
 	fmt.Fprintf(&b, "\n--size 25MB runs a single 25 MB transfer\n")
 	fmt.Fprintf(&b, "--size 25MB+ walks the normal escalation ladder but starts it at 25 MB.\n")
-	fmt.Fprintf(&b, "\nThe server URL is resolved in this order:\n")
-	fmt.Fprintf(&b, "  1. --url flag\n")
-	fmt.Fprintf(&b, "  2. %s environment variable\n", ServerURLEnv)
-	fmt.Fprintf(&b, "  3. built-in default: %s\n", DefaultServerURL)
+	fmt.Fprintf(&b, "\n--timeout 5 caps each transfer at 5 minutes; raise it for very large --size values.\n")
+	fmt.Fprintf(&b, "\n--url and --timeout are written to the config file, so they apply now and persist for\n")
+	fmt.Fprintf(&b, "later runs. Without a flag the saved value is used (built-in defaults on first run).\n")
+	fmt.Fprintf(&b, "\nConfig file:\n")
+	fmt.Fprintf(&b, "  macOS    ~/Library/Application Support/speedtest/config.yml\n")
+	fmt.Fprintf(&b, "  Linux    ~/.config/speedtest/config.yml\n")
+	fmt.Fprintf(&b, "  Windows  %%AppData%%\\speedtest\\config.yml\n")
 	return b.String()
 }
 
@@ -71,6 +76,10 @@ func ParseConfig(args []string) (Config, error) {
 
 	if cfg.ShowVersion {
 		return cfg, nil
+	}
+
+	if cfg.timeoutMins < 0 {
+		return Config{}, fmt.Errorf("invalid --timeout %g (minutes must be positive)", cfg.timeoutMins)
 	}
 
 	if !cfg.Ping && !cfg.Down && !cfg.Up {
@@ -88,18 +97,9 @@ func ParseConfig(args []string) (Config, error) {
 		}
 	}
 
-	raw := cfg.ServerURL
-	if raw == "" {
-		raw = os.Getenv(ServerURLEnv)
+	if err := resolveConfig(&cfg); err != nil {
+		return Config{}, err
 	}
-	if raw == "" {
-		raw = DefaultServerURL
-	}
-	u, err := url.Parse(raw)
-	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
-		return Config{}, fmt.Errorf("invalid server URL %q (expected http(s)://host)", raw)
-	}
-	cfg.ServerURL = strings.TrimRight(raw, "/")
 	return cfg, nil
 }
 
@@ -111,6 +111,8 @@ func parseSize(s string) (int, bool, error) {
 		suffix string
 		mult   float64
 	}{
+		{"TB", 1 << 40},
+		{"T", 1 << 40},
 		{"GB", 1 << 30},
 		{"G", 1 << 30},
 		{"MB", 1 << 20},
@@ -127,14 +129,14 @@ func parseSize(s string) (int, bool, error) {
 	}
 	v, err := strconv.ParseFloat(t, 64)
 	if err != nil || v <= 0 {
-		return 0, false, fmt.Errorf("invalid --size %q (examples: 25MB, 500KB, 1.5MB, 25MB+)", s)
+		return 0, false, fmt.Errorf("invalid --size %q (examples: 25MB, 500KB, 1.5GB, 25MB+)", s)
+	}
+	if v*mult > MaxSize {
+		return 0, false, fmt.Errorf("--size %q exceeds the 1 TB limit", s)
 	}
 	b := int(v * mult)
 	if b < 1 {
 		return 0, false, fmt.Errorf("invalid --size %q (too small)", s)
-	}
-	if b > MaxSize {
-		return 0, false, fmt.Errorf("--size %q exceeds the 1 GB limit", s)
 	}
 	return b, andUp, nil
 }
