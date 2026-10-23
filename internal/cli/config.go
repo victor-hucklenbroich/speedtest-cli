@@ -39,9 +39,9 @@ func readFileConfig(path string) (fileConfig, error) {
 	return fc, nil
 }
 
-func writeFileConfig(path string, fc fileConfig) {
-	if os.MkdirAll(filepath.Dir(path), 0o755) != nil {
-		return
+func writeFileConfig(path string, fc fileConfig) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
 	}
 	content := fmt.Sprintf(`# speedtest configuration
 # --url, --timeout and --style write their values here, so they persist across runs.
@@ -50,7 +50,21 @@ url: %s
 timeout: %g
 style: %s
 `, fc.URL, fc.Timeout, fc.Style)
-	os.WriteFile(path, []byte(content), 0o644)
+	return os.WriteFile(path, []byte(content), 0o644)
+}
+
+// SaveStyle makes name the style of later runs.
+func SaveStyle(name string) error {
+	path, err := configPath()
+	if err != nil {
+		return err
+	}
+	file, err := readFileConfig(path)
+	if err != nil {
+		return err
+	}
+	file.Style = name
+	return writeFileConfig(path, file)
 }
 
 func resolveConfig(cfg *Config) error {
@@ -74,9 +88,6 @@ func resolveConfig(cfg *Config) error {
 	}
 	if file.URL == "" {
 		file.URL, changed = constants.DefaultServerURL, true
-	}
-	if cfg.Style != "" && cfg.Style != file.Style {
-		file.Style, changed = cfg.Style, true
 	}
 	if file.Timeout <= 0 {
 		file.Timeout, changed = constants.DefaultTimeoutMinutes, true

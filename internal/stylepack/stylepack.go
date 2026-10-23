@@ -30,7 +30,8 @@ var symbols = interp.Exports{
 }
 
 func Load(dir string) []error {
-	deposit(dir, builtin.Sources())
+	sources := builtin.Sources()
+	deposit(dir, sources)
 	entries, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil
@@ -44,9 +45,11 @@ func Load(dir string) []error {
 			continue
 		}
 		path := filepath.Join(dir, e.Name())
-		if src, err := os.ReadFile(path); err == nil && pristine(src) {
-			// An unedited built-in copy: the compiled style is used instead.
-			continue
+		if src, ok := sources[e.Name()]; ok {
+			if have, err := os.ReadFile(path); err == nil && bytes.Equal(have, withChecksum(src)) {
+				// An unedited built-in copy: the compiled style is used instead.
+				continue
+			}
 		}
 		if err := loadFile(path); err != nil {
 			msg := strings.ReplaceAll(err.Error(), path, e.Name())

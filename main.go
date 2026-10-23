@@ -47,6 +47,13 @@ func main() {
 		fmt.Printf("speedtest %s (%s/%s)\n", constants.Version, runtime.GOOS, runtime.GOARCH)
 		return
 	}
+	if cfg.SetStyle != "" {
+		if err := setStyle(cfg); err != nil {
+			fmt.Fprintf(os.Stderr, "speedtest: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -93,15 +100,32 @@ func main() {
 	}
 }
 
-func loadStyle(cfg cli.Config) style.Style {
-	if cfg.StylesDir != "" {
-		for _, err := range stylepack.Load(cfg.StylesDir) {
-			fmt.Fprintf(os.Stderr, "speedtest: %v\n", err)
-		}
+func setStyle(cfg cli.Config) error {
+	loadStyles(cfg.StylesDir)
+	if _, ok := style.Lookup(cfg.SetStyle); !ok {
+		return fmt.Errorf("unknown style %q", cfg.SetStyle)
 	}
+	if err := cli.SaveStyle(cfg.SetStyle); err != nil {
+		return err
+	}
+	fmt.Printf("✓ speedtest style set to \"%s\"\n", cfg.SetStyle)
+	return nil
+}
+
+func loadStyle(cfg cli.Config) style.Style {
+	loadStyles(cfg.StylesDir)
 	if s, ok := style.Lookup(cfg.Style); ok {
 		return s
 	}
 	fmt.Fprintf(os.Stderr, "speedtest: unknown style %q, using %q\n", cfg.Style, builtin.Digits.Name)
 	return builtin.Digits
+}
+
+func loadStyles(dir string) {
+	if dir == "" {
+		return
+	}
+	for _, err := range stylepack.Load(dir) {
+		fmt.Fprintf(os.Stderr, "speedtest: %v\n", err)
+	}
 }
