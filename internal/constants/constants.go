@@ -3,7 +3,7 @@ package constants
 import "time"
 
 // Version is a var release builds can inject it
-var Version = "0.1.1"
+var Version = "0.1.2"
 
 // CLI and config file
 const (
