@@ -63,6 +63,8 @@ Flags:
     	plain line output instead of the animated TUI (automatic when stdout is not a terminal)
   -size string
     	transfer size, e.g. 25MB or 500KB (bare number = MB, max 1TB); append + to escalate from there
+  -style string
+    	TUI style, default digits (saved to the config file)
   -timeout float
     	per-transfer timeout in minutes, default 1 (saved to the config file)
   -up
@@ -79,10 +81,15 @@ Phase flags combine: --ping --down runs ping and download
 
 --timeout 5 caps each transfer at 5 minutes; raise it for very large --size values.
 
---url and --timeout are written to the config file, so they apply now and persist for
-later runs. Without a flag the saved value is used (built-in defaults on first run).
+--url, --timeout and --style are written to the config file, so they apply now and
+persist for later runs. Without a flag the saved value is used (built-in defaults on
+first run).
 
-Config file:
+Styles: add your own by dropping .go files into the styles directory next to the
+config file. The built-in style is a starting template:
+  https://github.com/victor-hucklenbroich/speedtest-cli/blob/main/style/builtin/digits.go
+
+Config file (the styles directory sits next to it):
   macOS    ~/Library/Application Support/speedtest/config.yml
   Linux    ~/.config/speedtest/config.yml
   Windows  %AppData%\speedtest\config.yml
