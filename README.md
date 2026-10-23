@@ -6,7 +6,7 @@
 
 <img src="./demo/demo.gif" alt="drawing" width="650"/>
 
-A small, zero-dependency CLI that measures latency, download and upload bandwidth. 
+A CLI that measures latency, download and upload bandwidth with customizable TUI.
 Uses personal [Cloudflare Worker](worker/) as a bulk download / upload server. A different endpoint can be configured with the `--url` flag or the `url` entry in the config file (see Usage).
 
 ## Install
@@ -107,7 +107,7 @@ Config file (the styles directory sits next to it):
   `./speedtest --url http://localhost:8787`.
 - The usage block above is generated from the CLI's `--help` text: run
   `go generate ./...` after changing flags.
-- Releasing: pushing a tag like `v1.2.3` triggers the
+- Pushing a tag like `v1.2.3` triggers the
   [release workflow](.github/workflows/release.yml), which cross-compiles the
   binaries with [GoReleaser](https://goreleaser.com) (see `.goreleaser.yaml`),
   publishes them as a GitHub Release, and bumps the cask in
