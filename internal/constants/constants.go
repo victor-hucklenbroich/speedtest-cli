@@ -55,6 +55,11 @@ const (
 	AnimationSnap = 0.05
 )
 
+// stylepack
+const (
+	StyleChecksumPrefix = "// checksum: "
+)
+
 // gendocs
 const (
 	ReadmePath       = "README.md"
