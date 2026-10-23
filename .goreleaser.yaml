@@ -54,7 +54,8 @@ homebrew_casks:
     skip_upload: auto
     hooks:
       post:
-        install: >-
-          system_command "/usr/bin/xattr",
-          args: ["-dr", "com.apple.quarantine", "#{staged_path}/speedtest"]
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/speedtest"]
+          end
     caveats: Run `speedtest` for a full test, `speedtest --help` for options.
