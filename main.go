@@ -10,7 +10,10 @@ import (
 	"speedtest/internal/cli"
 	"speedtest/internal/constants"
 	"speedtest/internal/measure"
+	"speedtest/internal/stylepack"
 	"speedtest/internal/tui"
+	"speedtest/style"
+	"speedtest/style/builtin"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
@@ -62,13 +65,20 @@ func main() {
 		mcfg.UploadSizes = ladder(constants.UploadLadder, cfg.SizeBytes, cfg.SizeAndUp)
 	}
 
+	plain := cfg.Plain || !(isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()))
+	var tuiStyle style.Style
+	if !plain {
+		// Before measuring starts, so interpreting styles can't skew results.
+		tuiStyle = loadStyle(cfg)
+	}
+
 	events := make(chan measure.Event, constants.EventBuffer)
 	go func() {
 		measure.Run(ctx, mcfg, events)
 		close(events)
 	}()
 
-	if cfg.Plain || !(isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())) {
+	if plain {
 		runPlain(events, cfg.ServerURL)
 		return
 	}
@@ -77,8 +87,21 @@ func main() {
 	if cfg.ServerURL != constants.DefaultServerURL {
 		server = cfg.ServerURL
 	}
-	if _, err := tea.NewProgram(tui.New(events, cancel, server, cfg.Ping)).Run(); err != nil {
+	if _, err := tea.NewProgram(tui.New(events, cancel, server, cfg.Ping, tuiStyle)).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "speedtest: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func loadStyle(cfg cli.Config) style.Style {
+	if cfg.StylesDir != "" {
+		for _, err := range stylepack.Load(cfg.StylesDir) {
+			fmt.Fprintf(os.Stderr, "speedtest: %v\n", err)
+		}
+	}
+	if s, ok := style.Lookup(cfg.Style); ok {
+		return s
+	}
+	fmt.Fprintf(os.Stderr, "speedtest: unknown style %q, using %q\n", cfg.Style, builtin.Digits.Name)
+	return builtin.Digits
 }

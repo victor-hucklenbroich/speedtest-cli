@@ -12,6 +12,8 @@ const (
 	DefaultTimeoutMinutes = 1
 
 	MaxSize = 1 << 40
+
+	DefaultStyle = "digits"
 )
 
 // Measurement
@@ -45,10 +47,9 @@ var (
 const (
 	FrameInterval = 50 * time.Millisecond
 
-	DefaultWidth  = 80
-	SparkHistory  = 240
-	SparkMaxWidth = 48
-	BarWidth      = 24
+	DefaultWidth = 80
+	SparkHistory = 240
+	BarWidth     = 24
 
 	AnimationEase = 0.2
 	AnimationSnap = 0.05

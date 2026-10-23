@@ -11,6 +11,8 @@ import (
 
 	"speedtest/internal/constants"
 	"speedtest/internal/measure"
+	"speedtest/style"
+	"speedtest/style/builtin"
 )
 
 var (
@@ -71,6 +73,8 @@ type Model struct {
 	down phaseState
 	up   phaseState
 
+	style style.Style
+
 	startedAt time.Time
 	total     time.Duration
 	done      bool
@@ -78,13 +82,14 @@ type Model struct {
 	failed    bool
 }
 
-func New(events <-chan measure.Event, cancel context.CancelFunc, server string, ping bool) Model {
+func New(events <-chan measure.Event, cancel context.CancelFunc, server string, ping bool, s style.Style) Model {
 	return Model{
 		events:    events,
 		cancel:    cancel,
 		server:    server,
 		ping:      ping,
 		width:     constants.DefaultWidth,
+		style:     s,
 		startedAt: time.Now(),
 	}
 }
@@ -231,48 +236,69 @@ func (m Model) latencyBlock() string {
 	}
 }
 
-func (m Model) phaseBlock(name, arrow string, st *phaseState, style lipgloss.Style) string {
+func (m Model) phaseBlock(name, arrow string, st *phaseState, accent lipgloss.Style) string {
 	if !st.started {
 		return ""
 	}
-	title := style.Render(fmt.Sprintf("%-10s", arrow+" "+name))
+	title := accent.Render(fmt.Sprintf("%-10s", arrow+" "+name))
 	if st.done && st.max > 0 {
 		title += "  " + titleStyle.Render(fmt.Sprintf("%.2f Mbps", st.max))
 	}
 	lines := []string{title}
+	f := style.Frame{
+		Phase:   strings.ToLower(name),
+		Mbps:    st.display,
+		History: st.spark,
+		Width:   m.width - 4,
+		Accent:  func(s string) string { return accent.Render(s) },
+		Dim:     func(s string) string { return dimStyle.Render(s) },
+	}
+	if n := len(st.tiers); n > 0 && st.tiers[n-1].running {
+		f.Progress = float64(st.tiers[n-1].bytes) / float64(st.tiers[n-1].size)
+	}
 	if !st.done {
-		for i, row := range bigNumber(st.display) {
-			line := "  " + style.Render(row)
-			if i == 2 {
-				line += dimStyle.Render("  Mbps")
-			}
-			lines = append(lines, line)
-		}
-		w := m.width - 4
-		if w > constants.SparkMaxWidth {
-			w = constants.SparkMaxWidth
-		}
-		if len(st.spark) > 0 && w > 0 {
-			lines = append(lines, "  "+style.Render(sparkline(st.spark, w)))
+		for _, line := range m.live(f) {
+			lines = append(lines, "  "+line)
 		}
 	}
 	for _, row := range st.tiers {
-		lines = append(lines, m.renderTier(row, style))
+		lines = append(lines, m.renderTier(row, f))
 	}
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderTier(row tierRow, style lipgloss.Style) string {
+func (m Model) renderTier(row tierRow, f style.Frame) string {
 	label := fmt.Sprintf("%8s", measure.FormatBytes(row.size))
 	switch {
 	case row.running:
-		frac := float64(row.bytes) / float64(row.size)
-		return fmt.Sprintf("  %s  %s %3.0f%%", label, style.Render(bar(frac, constants.BarWidth)), frac*100)
+		f.Width = constants.BarWidth
+		return fmt.Sprintf("  %s  %s %3.0f%%", label, m.bar(f), f.Progress*100)
 	case row.err != nil:
 		return errStyle.Render(fmt.Sprintf("  %s  %s", label, measure.Reason(row.err)))
 	default:
 		return dimStyle.Render(fmt.Sprintf("  %s  %8.2f Mbps  (%.1fs)", label, row.mbps, row.elapsed.Seconds()))
 	}
+}
+
+func (m Model) live(f style.Frame) (lines []string) {
+	defer func() {
+		if r := recover(); r != nil {
+			lines = append(builtin.Digits.Live(f), errStyle.Render(fmt.Sprintf("style %q: %v", m.style.Name, r)))
+		}
+	}()
+	return m.style.Live(f)
+}
+
+func (m Model) bar(f style.Frame) (s string) {
+	defer func() {
+		if recover() != nil {
+			s = builtin.Digits.Bar(f)
+		}
+	}()
+	if b := m.style.Bar; b != nil {
+		return b(f)
+	}
+	return builtin.Digits.Bar(f)
 }
 
 func ms(d time.Duration) float64 { return float64(d) / float64(time.Millisecond) }

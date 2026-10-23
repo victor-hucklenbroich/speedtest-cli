@@ -16,6 +16,7 @@ import (
 type fileConfig struct {
 	URL     string  `yaml:"url"`
 	Timeout float64 `yaml:"timeout"`
+	Style   string  `yaml:"style"`
 }
 
 func configPath() (string, error) {
@@ -43,11 +44,12 @@ func writeFileConfig(path string, fc fileConfig) {
 		return
 	}
 	content := fmt.Sprintf(`# speedtest configuration
-# --url and --timeout write their values here, so they persist across runs.
+# --url, --timeout and --style write their values here, so they persist across runs.
 # You can also edit these directly.
 url: %s
 timeout: %g
-`, fc.URL, fc.Timeout)
+style: %s
+`, fc.URL, fc.Timeout, fc.Style)
 	os.WriteFile(path, []byte(content), 0o644)
 }
 
@@ -73,8 +75,14 @@ func resolveConfig(cfg *Config) error {
 	if file.URL == "" {
 		file.URL, changed = constants.DefaultServerURL, true
 	}
+	if cfg.Style != "" && cfg.Style != file.Style {
+		file.Style, changed = cfg.Style, true
+	}
 	if file.Timeout <= 0 {
 		file.Timeout, changed = constants.DefaultTimeoutMinutes, true
+	}
+	if file.Style == "" {
+		file.Style, changed = constants.DefaultStyle, true
 	}
 
 	u, err := url.Parse(file.URL)
@@ -91,5 +99,9 @@ func resolveConfig(cfg *Config) error {
 
 	cfg.ServerURL = file.URL
 	cfg.Timeout = time.Duration(file.Timeout * float64(time.Minute))
+	cfg.Style = file.Style
+	if path != "" {
+		cfg.StylesDir = filepath.Join(filepath.Dir(path), "styles")
+	}
 	return nil
 }

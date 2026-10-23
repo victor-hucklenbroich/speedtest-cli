@@ -20,6 +20,8 @@ type Config struct {
 	SizeBytes   int
 	SizeAndUp   bool
 	Timeout     time.Duration
+	Style       string
+	StylesDir   string
 	sizeRaw     string
 	timeoutMins float64
 }
@@ -32,6 +34,7 @@ func flagSet(cfg *Config) *flag.FlagSet {
 	fs.BoolVar(&cfg.Up, "up", false, "measure upload")
 	fs.StringVar(&cfg.sizeRaw, "size", "", "transfer size, e.g. 25MB or 500KB (bare number = MB, max 1TB); append + to escalate from there")
 	fs.Float64Var(&cfg.timeoutMins, "timeout", 0, "per-transfer timeout in minutes, default 1 (saved to the config file)")
+	fs.StringVar(&cfg.Style, "style", "", "TUI style, default digits (saved to the config file)")
 	fs.BoolVar(&cfg.Plain, "plain", false, "plain line output instead of the animated TUI (automatic when stdout is not a terminal)")
 	fs.BoolVar(&cfg.ShowVersion, "version", false, "print version and exit")
 	fs.Usage = func() { fmt.Fprint(fs.Output(), Usage()) }
@@ -48,9 +51,13 @@ func Usage() string {
 	fmt.Fprintf(&b, "\n--size 25MB runs a single 25 MB transfer\n")
 	fmt.Fprintf(&b, "--size 25MB+ walks the normal escalation ladder but starts it at 25 MB.\n")
 	fmt.Fprintf(&b, "\n--timeout 5 caps each transfer at 5 minutes; raise it for very large --size values.\n")
-	fmt.Fprintf(&b, "\n--url and --timeout are written to the config file, so they apply now and persist for\n")
-	fmt.Fprintf(&b, "later runs. Without a flag the saved value is used (built-in defaults on first run).\n")
-	fmt.Fprintf(&b, "\nConfig file:\n")
+	fmt.Fprintf(&b, "\n--url, --timeout and --style are written to the config file, so they apply now and\n")
+	fmt.Fprintf(&b, "persist for later runs. Without a flag the saved value is used (built-in defaults on\n")
+	fmt.Fprintf(&b, "first run).\n")
+	fmt.Fprintf(&b, "\nStyles: add your own by dropping .go files into the styles directory next to the\n")
+	fmt.Fprintf(&b, "config file. The built-in style is a starting template:\n")
+	fmt.Fprintf(&b, "  https://github.com/victor-hucklenbroich/speedtest-cli/blob/main/style/builtin/digits.go\n")
+	fmt.Fprintf(&b, "\nConfig file (the styles directory sits next to it):\n")
 	fmt.Fprintf(&b, "  macOS    ~/Library/Application Support/speedtest/config.yml\n")
 	fmt.Fprintf(&b, "  Linux    ~/.config/speedtest/config.yml\n")
 	fmt.Fprintf(&b, "  Windows  %%AppData%%\\speedtest\\config.yml\n")
