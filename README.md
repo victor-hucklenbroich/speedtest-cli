@@ -106,4 +106,4 @@ Config file:
   publishes them as a GitHub Release, and bumps the cask in
   [victor-hucklenbroich/homebrew-tap](https://github.com/victor-hucklenbroich/homebrew-tap).
   The version is injected at build time; the `-indev` value in
-  `internal/cli` only shows up in local `go build` binaries.
+  `internal/constants` only shows up in local `go build` binaries.

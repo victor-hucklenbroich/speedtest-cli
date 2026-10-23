@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"speedtest/internal/constants"
 	"speedtest/internal/measure"
 )
 
@@ -47,11 +48,11 @@ type phaseState struct {
 
 func (st *phaseState) animate() {
 	diff := st.target - st.display
-	if diff < 0.05 && diff > -0.05 {
+	if diff < constants.AnimationSnap && diff > -constants.AnimationSnap {
 		st.display = st.target
 		return
 	}
-	st.display += diff * 0.2
+	st.display += diff * constants.AnimationEase
 }
 
 type Model struct {
@@ -83,7 +84,7 @@ func New(events <-chan measure.Event, cancel context.CancelFunc, server string, 
 		cancel:    cancel,
 		server:    server,
 		ping:      ping,
-		width:     80,
+		width:     constants.DefaultWidth,
 		startedAt: time.Now(),
 	}
 }
@@ -99,7 +100,7 @@ func waitEvent(ch <-chan measure.Event) tea.Cmd {
 }
 
 func tickCmd() tea.Cmd {
-	return tea.Tick(50*time.Millisecond, func(time.Time) tea.Msg { return frameMsg{} })
+	return tea.Tick(constants.FrameInterval, func(time.Time) tea.Msg { return frameMsg{} })
 }
 
 func (m Model) Init() tea.Cmd {
@@ -153,8 +154,8 @@ func (m Model) handleEvent(ev measure.Event) (tea.Model, tea.Cmd) {
 		}
 		st.target = e.Mbps
 		st.spark = append(st.spark, e.Mbps)
-		if len(st.spark) > 240 {
-			st.spark = st.spark[len(st.spark)-240:]
+		if len(st.spark) > constants.SparkHistory {
+			st.spark = st.spark[len(st.spark)-constants.SparkHistory:]
 		}
 	case measure.TierResult:
 		st := m.phase(e.Phase)
@@ -248,8 +249,8 @@ func (m Model) phaseBlock(name, arrow string, st *phaseState, style lipgloss.Sty
 			lines = append(lines, line)
 		}
 		w := m.width - 4
-		if w > 48 {
-			w = 48
+		if w > constants.SparkMaxWidth {
+			w = constants.SparkMaxWidth
 		}
 		if len(st.spark) > 0 && w > 0 {
 			lines = append(lines, "  "+style.Render(sparkline(st.spark, w)))
@@ -266,7 +267,7 @@ func (m Model) renderTier(row tierRow, style lipgloss.Style) string {
 	switch {
 	case row.running:
 		frac := float64(row.bytes) / float64(row.size)
-		return fmt.Sprintf("  %s  %s %3.0f%%", label, style.Render(bar(frac, 24)), frac*100)
+		return fmt.Sprintf("  %s  %s %3.0f%%", label, style.Render(bar(frac, constants.BarWidth)), frac*100)
 	case row.err != nil:
 		return errStyle.Render(fmt.Sprintf("  %s  %s", label, measure.Reason(row.err)))
 	default:

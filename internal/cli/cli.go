@@ -6,17 +6,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"speedtest/internal/constants"
 )
-
-const (
-	DefaultServerURL = "https://speedtest-worker.speedtest-cli.workers.dev"
-
-	DefaultTimeoutMinutes = 1
-
-	MaxSize = 1 << 40
-)
-
-var Version = "0.1.1"
 
 type Config struct {
 	ServerURL   string
@@ -131,7 +123,7 @@ func parseSize(s string) (int, bool, error) {
 	if err != nil || v <= 0 {
 		return 0, false, fmt.Errorf("invalid --size %q (examples: 25MB, 500KB, 1.5GB, 25MB+)", s)
 	}
-	if v*mult > MaxSize {
+	if v*mult > constants.MaxSize {
 		return 0, false, fmt.Errorf("--size %q exceeds the 1 TB limit", s)
 	}
 	b := int(v * mult)

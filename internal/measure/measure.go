@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"speedtest/internal/constants"
 )
 
 type Phase int
@@ -182,7 +184,7 @@ func (r *runner) phase(p Phase, sizes []int, fn func(size int, count *atomic.Int
 		if mbps > best {
 			best = mbps
 		}
-		if elapsed > 10*time.Second {
+		if elapsed > constants.EscalationCutoff {
 			break
 		}
 	}
@@ -190,7 +192,7 @@ func (r *runner) phase(p Phase, sizes []int, fn func(size int, count *atomic.Int
 }
 
 func (r *runner) trackProgress(p Phase, size int, count *atomic.Int64, start time.Time, stop <-chan struct{}) {
-	tick := time.NewTicker(100 * time.Millisecond)
+	tick := time.NewTicker(constants.ProgressInterval)
 	defer tick.Stop()
 	type sample struct {
 		t time.Time
@@ -206,7 +208,7 @@ func (r *runner) trackProgress(p Phase, size int, count *atomic.Int64, start tim
 		case now := <-tick.C:
 			b := count.Load()
 			window = append(window, sample{now, b})
-			if len(window) > 7 {
+			if len(window) > constants.ProgressWindow {
 				window = window[1:]
 			}
 			oldest := window[0]

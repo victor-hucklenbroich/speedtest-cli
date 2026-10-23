@@ -16,7 +16,7 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X speedtest/internal/cli.Version={{ .Version }}
+      - -X speedtest/internal/constants.Version={{ .Version }}
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"

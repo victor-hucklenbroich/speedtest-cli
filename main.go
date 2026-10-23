@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"speedtest/internal/cli"
+	"speedtest/internal/constants"
 	"speedtest/internal/measure"
 	"speedtest/internal/tui"
 
@@ -16,21 +17,6 @@ import (
 )
 
 //go:generate go run ./internal/gendocs
-
-var (
-	downloadLadder = []int{
-		10 << 20,
-		25 << 20,
-		50 << 20,
-		90 << 20,
-	}
-	uploadLadder = []int{
-		5 << 20,
-		10 << 20,
-		25 << 20,
-		50 << 20,
-	}
-)
 
 func ladder(defaults []int, size int, andUp bool) []int {
 	if size == 0 {
@@ -55,7 +41,7 @@ func main() {
 		os.Exit(2)
 	}
 	if cfg.ShowVersion {
-		fmt.Printf("speedtest %s (%s/%s)\n", cli.Version, runtime.GOOS, runtime.GOARCH)
+		fmt.Printf("speedtest %s (%s/%s)\n", constants.Version, runtime.GOOS, runtime.GOARCH)
 		return
 	}
 
@@ -67,16 +53,16 @@ func main() {
 		Client:  &http.Client{Timeout: cfg.Timeout},
 	}
 	if cfg.Ping {
-		mcfg.LatencySamples = 20
+		mcfg.LatencySamples = constants.LatencySamples
 	}
 	if cfg.Down {
-		mcfg.DownloadSizes = ladder(downloadLadder, cfg.SizeBytes, cfg.SizeAndUp)
+		mcfg.DownloadSizes = ladder(constants.DownloadLadder, cfg.SizeBytes, cfg.SizeAndUp)
 	}
 	if cfg.Up {
-		mcfg.UploadSizes = ladder(uploadLadder, cfg.SizeBytes, cfg.SizeAndUp)
+		mcfg.UploadSizes = ladder(constants.UploadLadder, cfg.SizeBytes, cfg.SizeAndUp)
 	}
 
-	events := make(chan measure.Event, 64)
+	events := make(chan measure.Event, constants.EventBuffer)
 	go func() {
 		measure.Run(ctx, mcfg, events)
 		close(events)
@@ -88,7 +74,7 @@ func main() {
 	}
 
 	server := ""
-	if cfg.ServerURL != cli.DefaultServerURL {
+	if cfg.ServerURL != constants.DefaultServerURL {
 		server = cfg.ServerURL
 	}
 	if _, err := tea.NewProgram(tui.New(events, cancel, server, cfg.Ping)).Run(); err != nil {

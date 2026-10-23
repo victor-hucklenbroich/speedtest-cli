@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"speedtest/internal/constants"
 )
 
 type fileConfig struct {
@@ -69,10 +71,10 @@ func resolveConfig(cfg *Config) error {
 		file.Timeout, changed = cfg.timeoutMins, true
 	}
 	if file.URL == "" {
-		file.URL, changed = DefaultServerURL, true
+		file.URL, changed = constants.DefaultServerURL, true
 	}
 	if file.Timeout <= 0 {
-		file.Timeout, changed = DefaultTimeoutMinutes, true
+		file.Timeout, changed = constants.DefaultTimeoutMinutes, true
 	}
 
 	u, err := url.Parse(file.URL)
