@@ -35,8 +35,7 @@ irm https://raw.githubusercontent.com/victor-hucklenbroich/speedtest-cli/main/in
 
 Same behavior as the shell installer: picks amd64/arm64, verifies the
 checksum, installs `speedtest.exe` to `%LOCALAPPDATA%\Programs\speedtest-cli`,
-and adds that folder to your user PATH. `$env:VERSION` and `$env:BIN_DIR`
-pin a release or change the directory.
+and adds that folder to your user PATH.
 
 Prebuilt archives for all platforms are also on the
 [releases page](https://github.com/victor-hucklenbroich/speedtest-cli/releases).

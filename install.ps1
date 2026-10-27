@@ -28,21 +28,16 @@ switch ($RawArch) {
     default { throw "install.ps1: unsupported architecture $RawArch" }
 }
 
-# --- Resolve the version -----------------------------------------------------
-if ($env:VERSION) {
-    $Version = $env:VERSION
-    if ($Version -notlike "v*") { $Version = "v$Version" } # accept 1.2.0 and v1.2.0
+# --- Resolve latest version --------------------------------------------------
+$Resp = Invoke-WebRequest -Uri "$BaseUrl/releases/latest" -Method Head -UseBasicParsing
+if ($Resp.BaseResponse.PSObject.Properties["ResponseUri"]) {
+    $FinalUrl = $Resp.BaseResponse.ResponseUri.AbsoluteUri
 } else {
-    $Resp = Invoke-WebRequest -Uri "$BaseUrl/releases/latest" -Method Head -UseBasicParsing
-    if ($Resp.BaseResponse.PSObject.Properties["ResponseUri"]) {
-        $FinalUrl = $Resp.BaseResponse.ResponseUri.AbsoluteUri
-    } else {
-        $FinalUrl = $Resp.BaseResponse.RequestMessage.RequestUri.AbsoluteUri
-    }
-    $Version = ($FinalUrl -split "/")[-1]
-    if ($Version -notlike "v*") {
-        throw "install.ps1: could not determine the latest release (no releases yet?)"
-    }
+    $FinalUrl = $Resp.BaseResponse.RequestMessage.RequestUri.AbsoluteUri
+}
+$Version = ($FinalUrl -split "/")[-1]
+if ($Version -notlike "v*") {
+    throw "install.ps1: could not determine the latest release (no releases yet?)"
 }
 
 # --- Download and verify -----------------------------------------------------
@@ -73,13 +68,7 @@ try {
     if (-not (Test-Path $Extracted)) { throw "install.ps1: $Binary not found in $Archive" }
 
     # --- Install -------------------------------------------------------------
-    if ($env:BIN_DIR) {
-        $BinDir = $env:BIN_DIR
-        $ManagePath = $false # you picked the directory, so you own its PATH entry
-    } else {
-        $BinDir = Join-Path $env:LOCALAPPDATA "Programs\speedtest-cli"
-        $ManagePath = $true
-    }
+    $BinDir = Join-Path $env:LOCALAPPDATA "Programs\speedtest-cli"
     New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
     $Target = Join-Path $BinDir $Binary
     Copy-Item -Path $Extracted -Destination $Target -Force
@@ -89,18 +78,14 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "install.ps1: $Target --version failed" }
 
     # --- PATH ----------------------------------------------------------------
-    $OnPath = ($env:Path -split ";" | Where-Object { $_ -eq $BinDir }).Count -gt 0
-    if ($ManagePath) {
-        $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
-        if (-not ($UserPath -split ";" | Where-Object { $_ -eq $BinDir })) {
-            $NewPath = if ($UserPath) { $UserPath.TrimEnd(";") + ";" + $BinDir } else { $BinDir }
-            [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
-            Write-Host "Added $BinDir to your user PATH; already-open terminals need a restart to see it."
-        }
-        if (-not $OnPath) { $env:Path = "$env:Path;$BinDir" } # current session
-    } elseif (-not $OnPath) {
-        Write-Host ""
-        Write-Host "warning: $BinDir is not on your PATH."
+    $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if (-not ($UserPath -split ";" | Where-Object { $_ -eq $BinDir })) {
+        $NewPath = if ($UserPath) { $UserPath.TrimEnd(";") + ";" + $BinDir } else { $BinDir }
+        [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
+        Write-Host "Added $BinDir to your user PATH; already-open terminals need a restart to see it."
+    }
+    if (-not ($env:Path -split ";" | Where-Object { $_ -eq $BinDir })) {
+        $env:Path = "$env:Path;$BinDir" # current session
     }
 } finally {
     Remove-Item -Recurse -Force -Path $Tmp -ErrorAction SilentlyContinue
