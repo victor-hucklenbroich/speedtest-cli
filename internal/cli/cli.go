@@ -13,7 +13,6 @@ import (
 type Config struct {
 	ServerURL   string
 	ShowVersion bool
-	Plain       bool
 	Ping        bool
 	Down        bool
 	Up          bool
@@ -36,7 +35,6 @@ func flagSet(cfg *Config) *flag.FlagSet {
 	fs.StringVar(&cfg.sizeRaw, "size", "", "transfer size, e.g. 25MB or 500KB (bare number = MB, max 1TB); append + to escalate from there")
 	fs.Float64Var(&cfg.timeoutMins, "timeout", 0, "per-transfer timeout in minutes, default 1 (saved to the config file)")
 	fs.StringVar(&cfg.SetStyle, "style", "", "set the TUI style and exit, default digits (saved to the config file)")
-	fs.BoolVar(&cfg.Plain, "plain", false, "plain line output instead of the animated TUI (automatic when stdout is not a terminal)")
 	fs.BoolVar(&cfg.ShowVersion, "version", false, "print version and exit")
 	fs.Usage = func() { fmt.Fprint(fs.Output(), Usage()) }
 	return fs

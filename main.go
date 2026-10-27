@@ -16,7 +16,6 @@ import (
 	"speedtest/style/builtin"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mattn/go-isatty"
 )
 
 //go:generate go run ./internal/gendocs
@@ -72,23 +71,13 @@ func main() {
 		mcfg.UploadSizes = ladder(constants.UploadLadder, cfg.SizeBytes, cfg.SizeAndUp)
 	}
 
-	plain := cfg.Plain || !(isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()))
-	var tuiStyle style.Style
-	if !plain {
-		// Before measuring starts, so interpreting styles can't skew results.
-		tuiStyle = loadStyle(cfg)
-	}
+	tuiStyle := loadStyle(cfg)
 
 	events := make(chan measure.Event, constants.EventBuffer)
 	go func() {
 		measure.Run(ctx, mcfg, events)
 		close(events)
 	}()
-
-	if plain {
-		runPlain(events, cfg.ServerURL)
-		return
-	}
 
 	server := ""
 	if cfg.ServerURL != constants.DefaultServerURL {
