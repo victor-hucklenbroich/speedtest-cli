@@ -23,14 +23,9 @@ brew install --cask victor-hucklenbroich/tap/speedtest
 curl -fsSL https://raw.githubusercontent.com/victor-hucklenbroich/speedtest-cli/main/install.sh | sh
 ```
 
-The script picks the right binary for your OS/architecture, verifies its
-checksum, and installs `speedtest` to `/usr/local/bin` (or `~/.local/bin`
-when that isn't writable). Pin a version or choose the directory with
-environment variables:
-
-```
-curl -fsSL https://raw.githubusercontent.com/victor-hucklenbroich/speedtest-cli/main/install.sh | VERSION=v1.2.0 BIN_DIR=~/bin sh
-```
+The script picks the right binary for your OS/architecture, downloads the
+latest release, verifies its checksum, and installs `speedtest` to
+`/usr/local/bin` (or `~/.local/bin` when that isn't writable).
 
 **PowerShell installer (Windows)**
 

@@ -32,22 +32,14 @@ case "$(uname -m)" in
   *) fail "unsupported architecture $(uname -m)" ;;
 esac
 
-# --- Resolve the version ----------------------------------------------------
-if [ -n "${VERSION:-}" ]; then
-  # Accept both "1.2.0" and "v1.2.0".
-  case "$VERSION" in
-    v*) version="$VERSION" ;;
-    *) version="v$VERSION" ;;
-  esac
-else
-  redirect="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$BASE_URL/releases/latest")" ||
-    fail "could not resolve the latest release (no releases yet?)"
-  version="${redirect##*/}"
-  case "$version" in
-    v*) ;;
-    *) fail "could not determine the latest release tag from $redirect" ;;
-  esac
-fi
+# --- Resolve latest version ---------------------------------------------
+redirect="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$BASE_URL/releases/latest")" ||
+  fail "could not resolve the latest release (no releases yet?)"
+version="${redirect##*/}"
+case "$version" in
+  v*) ;;
+  *) fail "could not determine the latest release tag from $redirect" ;;
+esac
 
 # --- Download and verify ----------------------------------------------------
 archive="speedtest-cli_${os}_${arch}.tar.gz"
@@ -74,10 +66,7 @@ expected="$(awk -v name="$archive" '$2 == name { print $1 }' "$tmp/checksums.txt
 tar -xzf "$tmp/$archive" -C "$tmp" "$BINARY"
 
 # --- Install ----------------------------------------------------------------
-if [ -n "${BIN_DIR:-}" ]; then
-  bin_dir="$BIN_DIR"
-  mkdir -p "$bin_dir"
-elif [ -d /usr/local/bin ] && [ -w /usr/local/bin ]; then
+if [ -d /usr/local/bin ] && [ -w /usr/local/bin ]; then
   bin_dir="/usr/local/bin"
 else
   bin_dir="$HOME/.local/bin"
