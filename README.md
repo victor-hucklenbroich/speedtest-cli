@@ -53,8 +53,6 @@ Flags:
     	measure download
   -ping
     	measure ping
-  -plain
-    	plain line output instead of the animated TUI (automatic when stdout is not a terminal)
   -size string
     	transfer size, e.g. 25MB or 500KB (bare number = MB, max 1TB); append + to escalate from there
   -style string
@@ -79,9 +77,8 @@ Phase flags combine: --ping --down runs ping and download
 persist for later runs. Without a flag the saved value is used (built-in defaults on
 first run).
 
-Styles: add your own by dropping .go files into the styles directory next to the
-config file. The built-in style is a starting template:
-  https://github.com/victor-hucklenbroich/speedtest-cli/blob/main/style/builtin/digits.go
+Styles: the built-in styles are copied into the styles directory next to the config
+file. Edit a copy to change that style, or copy one under a new Name to add your own.
 
 Config file (the styles directory sits next to it):
   macOS    ~/Library/Application Support/speedtest/config.yml
