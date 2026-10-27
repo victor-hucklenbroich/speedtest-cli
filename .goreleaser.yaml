@@ -58,4 +58,8 @@ homebrew_casks:
           on_macos do
             run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/speedtest"]
           end
+    # brew zap also removes config.yml and the styles directory.
+    zap:
+      trash:
+        - "~/Library/Application Support/speedtest"
     caveats: Run `speedtest` for a full test, `speedtest --help` for options.
